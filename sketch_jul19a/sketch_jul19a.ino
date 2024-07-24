@@ -2,12 +2,13 @@
 #include <SPI.h>
 #include <SD.h>
 #include <math.h>
+#include "pitches.h"
 
-struct Color {
-  int r;
-  int g;
-  int b;
-};
+// struct Color {
+//   int r;
+//   int g;
+//   int b;
+// };
 
 struct Point3D {
   float x;
@@ -47,40 +48,108 @@ Edge edges[EDGE_NUM] = {
     {8,10}, {9,11}
 };
 
-Color color;
+#define BUTTON_PIN 6
+
+//Color color;
 
 TFT_eSPI tft = TFT_eSPI();
 
 #define SD_CS 4
 
-File myFile;
+bool readShapeFromFile(const char* filename) {
+  File file = SD.open(filename);
+  if (!file) {
+    //Serial.println(F("Failed to open file for reading"));
+    return false;
+  }
+
+  // Clear existing points and edges
+  memset(points, 0, sizeof(points));
+  memset(edges, 0, sizeof(edges));
+
+  // Read number of points
+  int numPoints = file.parseInt();
+  if (numPoints > POINT_NUM) {
+    //Serial.println(F("Too many points in file"));
+    file.close();
+    return false;
+  }
+
+  // Read points
+  for (int i = 0; i < numPoints; i++) {
+    points[i].x = file.parseFloat();
+    file.read(); // Skip comma
+    points[i].y = file.parseFloat();
+    file.read(); // Skip comma
+    points[i].z = file.parseFloat();
+    file.read(); // Skip newline
+  }
+
+  // Read number of edges
+  int numEdges = file.parseInt();
+  if (numEdges > EDGE_NUM) {
+    //Serial.println(F("Too many edges in file"));
+    file.close();
+    return false;
+  }
+
+  // Read edges
+  for (int i = 0; i < numEdges; i++) {
+    edges[i].a = file.parseInt();
+    file.read(); // Skip comma
+    edges[i].b = file.parseInt();
+    file.read(); // Skip newline
+  }
+
+  file.close();
+  //Serial.println(F("Shape loaded successfully"));
+  return true;
+}
 
 void setup() {
   Serial.begin(9600);
   tft.begin();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
+  tft.drawCentreString("1d4", 120, 40, 2);
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   if (!SD.begin(SD_CS)) {
-    Serial.println(F("SD card initialization failed!"));
+    //Serial.println(F("SD card initialization failed!"));
+    tone(7,NOTE_G4);
+    delay(250);
+    noTone(7);
+    delay(250);
+    tone(7,NOTE_C4);
+    delay(500);
+    noTone(7);
     return;
   }
 
-  myFile = SD.open("log.txt", FILE_WRITE);
-  if (myFile) {
-    Serial.print("Writing to log.txt...");
-    myFile.println("Power On");
-    // close the file:
-    myFile.close();
-    Serial.println("done.");
+  // File myFile = SD.open("log.txt", FILE_WRITE);
+  // if (myFile) {
+  //   //Serial.print("Writing to log.txt...");
+  //   myFile.println("Power On");
+  //   // close the file:
+  //   myFile.close();
+  //   //Serial.println("done.");
+  // } else {
+  //   // if the file didn't open, print an error:
+  //   //Serial.println("error opening test.txt");
+  // }
+
+  if (readShapeFromFile("/4")) {
+    //Serial.println(F("Shape loaded successfully"));
   } else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
+    Serial.println(F("Failed to load shape"));
   }
 
-  color.r = 0;
-  color.g = 0;
-  color.b = 0;
+  //color.r = 0;
+  //color.g = 0;
+  //color.b = 0;
+
+  
 
   //randomSeed(analogRead(0)); // Seed the random number generator
 }
@@ -130,10 +199,32 @@ void project(Point3D &point, Point3D &projPoint) {
 
 float deltatime = 0.1;
 Point3D projectedPoints[POINT_NUM];
+bool pPressed = false;
+
+#define MAX_FILES 6
+String files[MAX_FILES] = {"/4","/6","/8","/10","/12","/20"};
+int d_num = 0;
+
 void loop() {
   
   //if (currentMillis - previousMillis >= interval) {
   unsigned long prev = millis();
+
+  int val = digitalRead(BUTTON_PIN);   // read the input pin
+  bool pressed = false;
+  if (val == LOW) {
+    Serial.println("a");
+    pressed = true;
+  }
+
+  if (pressed && !pPressed) {
+    d_num++;
+    if (d_num >= MAX_FILES) {
+      d_num = 0;
+    }
+    readShapeFromFile(files[d_num].c_str());
+    tft.fillCircle(120, 120, 70, TFT_BLACK);
+  }
 
   Point3D center = {0, 0, 0};
 
