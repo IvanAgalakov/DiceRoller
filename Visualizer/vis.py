@@ -1,6 +1,5 @@
 import pygame
 import os
-import math
 
 # Initialize Pygame
 pygame.init()
@@ -26,7 +25,8 @@ def read_obj(filename):
             elif line.startswith('f '):
                 face = [int(v.split('/')[0]) - 1 for v in line.split()[1:]]
                 for i in range(len(face)):
-                    edges.add((face[i], face[(i+1) % len(face)]))
+                    edge = tuple(sorted((face[i], face[(i+1) % len(face)])))
+                    edges.add(edge)
     return points, list(edges)
 
 def read_shape(filename):
@@ -37,7 +37,7 @@ def read_shape(filename):
         num_points = int(lines[0])
         points = [list(map(float, line.strip().split(','))) for line in lines[1:num_points+1]]
         num_edges = int(lines[num_points+1])
-        edges = [list(map(int, line.strip().split(','))) for line in lines[num_points+2:]]
+        edges = [tuple(sorted(map(int, line.strip().split(',')))) for line in lines[num_points+2:]]
     return points, edges
 
 def write_shape(filename, points, edges):
@@ -45,14 +45,22 @@ def write_shape(filename, points, edges):
         f.write(f"{len(points)}\n")
         for point in points:
             f.write(f"{point[0]:.2f},{point[1]:.2f},{point[2]:.2f}\n")
-        f.write(f"{len(edges)}\n")
+        count = 0
         for edge in edges:
-            f.write(f"{edge[0]},{edge[1]}\n")
+            if edge[0] != edge[1]:
+                count += 1
+        f.write(f"{count}\n")
+        for edge in edges:
+            if edge[0] != edge[1]:
+                f.write(f"{edge[0]},{edge[1]}\n")
 
 def write_obj(filename, points, edges):
     with open(filename, 'w') as f:
         for point in points:
             f.write(f"v {point[0]:.6f} {point[1]:.6f} {point[2]:.6f}\n")
+        
+        # Remove duplicate edges and sort each edge
+        edges = set(tuple(sorted(edge)) for edge in edges)
         
         # Create faces from edges
         faces = []
@@ -78,6 +86,7 @@ def write_obj(filename, points, edges):
         
         for face in faces:
             f.write(f"f {' '.join(str(v+1) for v in face)}\n")
+
 
 def project(point, scale, offset):
     x, y, z = point
