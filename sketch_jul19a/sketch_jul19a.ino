@@ -52,13 +52,6 @@ File file;
 
 #define SPEAKER_PIN 7
 
-// #define AUDIO_BUFFER_SIZE 128
-// #define SAMPLE_RATE 8000
-// uint8_t audioBuffer[AUDIO_BUFFER_SIZE];
-// File audioFile;
-// unsigned long lastAudioUpdate = 0;
-// bool isPlaying = false;
-
 uint16_t shapeColor = TFT_WHITE;
 
 bool readShapeFromFile(const char* filename) {
@@ -162,7 +155,7 @@ void displayResult(int number) {
 void setup() {
   Serial.begin(9600);
   tft.begin();
-  tft.setRotation(3);
+  tft.setRotation(0);
   tft.fillScreen(TFT_BLACK);
 
   pinMode(S_BUTTON_PIN, INPUT_PULLUP);
@@ -171,14 +164,14 @@ void setup() {
   pinMode(ROLL_PIN, INPUT_PULLUP);
 
   if (!SD.begin(SD_CS)) {
-    Serial.println(F("SD card initialization failed!"));
+    //Serial.println(F("SD card initialization failed!"));
     return;
   }
 
   if (readShapeFromFile(files[0])) {
-    Serial.println(F("Shape loaded successfully"));
+    //Serial.println(F("Shape loaded successfully"));
   } else {
-    Serial.println(F("Failed to load shape"));
+    //Serial.println(F("Failed to load shape"));
   }
 
   // Initial dice type display
@@ -239,10 +232,10 @@ float lerpToTarget(float targetSpeed, float deltaTime, float value) {
   return value;
 }
 
-int initialFrequency = 100;
+int initialFrequency = 500;
 int finalFrequency = 10;
-int rollDuration = 1000;
-int numBeeps = 40;
+int rollDuration = 200;
+int numBeeps = 30;
 
 unsigned long beepStartTime = 0;
 int currentBeep = 0;
@@ -265,6 +258,21 @@ void rollDiceSound() {
       }
     }
   }
+}
+
+void playSwitch() {
+  const int duration = 50;  // Duration of each tone in milliseconds
+  const int pause = 10;     // Pause between tones in milliseconds
+  
+  // Play an ascending series of tones
+  tone(SPEAKER_PIN, 1000, duration);
+  delay(duration + pause);
+  tone(SPEAKER_PIN, 1500, duration);
+  delay(duration + pause);
+  tone(SPEAKER_PIN, 2000, duration);
+  delay(duration);
+  
+  noTone(SPEAKER_PIN);  // Ensure the tone is stopped
 }
 
 void startRollDiceSound() {
@@ -305,12 +313,19 @@ void loop() {
         readShapeFromFile(files[d_num]);
         Serial.println(files[d_num]);
         tft.fillScreen(TFT_BLACK); // Clear the screen
+        rolling = false;
+        speed.x = 10;
+        speed.y = 10;
+        speed.z = 10;
+        playSwitch();
         roll_num = 1;
         displayDiceType(files[d_num] + 1, roll_num); // Update dice type display (skip '/' character)
         break;
       case R_BUTTON_PIN:
         roll_num++;
         displayDiceType(files[d_num] + 1, roll_num);
+        tone(SPEAKER_PIN, 1000, 50);
+        delay(50);
         break;
       case L_BUTTON_PIN:
         roll_num--;
@@ -318,6 +333,8 @@ void loop() {
           roll_num = 1;
         }
         displayDiceType(files[d_num] + 1, roll_num);
+        tone(SPEAKER_PIN, 800, 50);
+        delay(50);
         break;
       case ROLL_PIN:
           // Generate random value between 30 and 50
