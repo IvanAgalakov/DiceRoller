@@ -1,7 +1,7 @@
 #include <TFT_eSPI.h>
 #include <SdFat.h>
-#include <math.h>
-#include "pitches.h"
+//#include <math.h>
+//#include "pitches.h"
 
 struct Point3D {
   float x;
@@ -15,16 +15,16 @@ struct Edge {
 };
 
 #define POINT_NUM 20
-#define PHI 1.618033988749895  // Golden ratio
-#define SIZE 30
-Point3D points[POINT_NUM] = {
+//#define PHI 1.618033988749895  // Golden ratio
+//#define SIZE 30
+Point3D points[POINT_NUM]; /*= {
     {0, SIZE, PHI*SIZE}, {0, -SIZE, PHI*SIZE}, {0, SIZE, -PHI*SIZE}, {0, -SIZE, -PHI*SIZE},
     {SIZE, PHI*SIZE, 0}, {-SIZE, PHI*SIZE, 0}, {SIZE, -PHI*SIZE, 0}, {-SIZE, -PHI*SIZE, 0},
     {PHI*SIZE, 0, SIZE}, {-PHI*SIZE, 0, SIZE}, {PHI*SIZE, 0, -SIZE}, {-PHI*SIZE, 0, -SIZE}
-};
+};*/
 
 #define EDGE_NUM 30
-Edge edges[EDGE_NUM] = {
+Edge edges[EDGE_NUM]; /*= {
     {0,1}, {0,4}, {0,5}, {0,8}, {0,9},
     {1,6}, {1,7}, {1,8}, {1,9},
     {2,3}, {2,4}, {2,5}, {2,10}, {2,11},
@@ -34,7 +34,7 @@ Edge edges[EDGE_NUM] = {
     {6,7}, {6,8}, {6,10},
     {7,9}, {7,11},
     {8,10}, {9,11}
-};
+};*/
 
 #define MAX_FILES 6
 const char* files[MAX_FILES] = {"/4","/6","/8","/10","/12","/20"};
@@ -54,11 +54,11 @@ File file;
 
 uint16_t shapeColor = TFT_WHITE;
 
-bool readShapeFromFile(const char* filename) {
+void readShapeFromFile(const char* filename) {
   file = SD.open(filename);
-  if (!file) {
-    return false;
-  }
+  // if (!file) {
+  //   return false;
+  // }
 
   // Clear existing points and edges
   memset(points, 0, sizeof(points));
@@ -66,10 +66,10 @@ bool readShapeFromFile(const char* filename) {
 
   // Read number of points
   int numPoints = file.parseInt();
-  if (numPoints > POINT_NUM) {
-    file.close();
-    return false;
-  }
+  // if (numPoints > POINT_NUM) {
+  //   file.close();
+  //   return false;
+  // }
 
   // Read points
   for (int i = 0; i < numPoints; i++) {
@@ -82,7 +82,7 @@ bool readShapeFromFile(const char* filename) {
   }
 
   // Read number of edges
-  int numEdges = file.parseInt();
+  uint8_t numEdges = file.parseInt();
   if (numEdges > EDGE_NUM) {
     file.close();
     return false;
@@ -111,7 +111,7 @@ bool readShapeFromFile(const char* filename) {
   shapeColor = (r8 << 11) | (g8 << 5) | b8;
 
   file.close();
-  return true;
+  //return true;
 }
 
 void displayDiceType(const char* diceType, int amount) {
@@ -122,7 +122,7 @@ void displayDiceType(const char* diceType, int amount) {
 
   tft.setTextColor(shapeColor, TFT_BLACK); // White text on black background
   // Draw "Roll: <diceType>"
-  String rollText = "Roll: ";
+  String rollText = "Dice: ";
   rollText += diceType;
   int rollTextWidth = tft.textWidth(rollText);
   tft.setCursor((240 - rollTextWidth) / 2, 10); // Center horizontally, position vertically
@@ -153,9 +153,9 @@ void displayResult(int number) {
 
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   tft.begin();
-  tft.setRotation(0);
+  //tft.setRotation(0);
   tft.fillScreen(TFT_BLACK);
 
   pinMode(S_BUTTON_PIN, INPUT_PULLUP);
@@ -168,11 +168,13 @@ void setup() {
     return;
   }
 
-  if (readShapeFromFile(files[0])) {
+  /*if (*/
+  readShapeFromFile(files[0]);
+  /*) {
     //Serial.println(F("Shape loaded successfully"));
   } else {
     //Serial.println(F("Failed to load shape"));
-  }
+  }*/
 
   // Initial dice type display
   displayDiceType("4", 1);
@@ -232,45 +234,46 @@ float lerpToTarget(float targetSpeed, float deltaTime, float value) {
   return value;
 }
 
-int initialFrequency = 500;
-int finalFrequency = 10;
-int rollDuration = 200;
-int numBeeps = 30;
+constexpr uint8_t initialFrequency = 500;
+constexpr uint8_t finalFrequency = 10;
+constexpr uint8_t rollDuration = 200;
+constexpr uint8_t numBeeps = 30;
 
 unsigned long beepStartTime = 0;
-int currentBeep = 0;
+uint8_t currentBeep = 0;
 bool rolling = false;
 
 void rollDiceSound() {
   if (rolling) {
     unsigned long elapsedTime = millis() - beepStartTime;
-    if (elapsedTime >= rollDuration / numBeeps) {
+    if (elapsedTime >= 6) {
       beepStartTime = millis();
-      int frequency = map(currentBeep * rollDuration / numBeeps, 0, rollDuration, initialFrequency, finalFrequency);
+      int frequency = map(currentBeep * 6, 0, rollDuration, initialFrequency, finalFrequency);
       int beepDuration = map(currentBeep, 0, numBeeps, 50, 150);
       
       tone(SPEAKER_PIN, frequency, beepDuration);
       
       currentBeep++;
       if (currentBeep >= numBeeps) {
-        noTone(SPEAKER_PIN);
         rolling = false;
+        noTone(SPEAKER_PIN);
       }
     }
   }
 }
+
 
 void playSwitch() {
   const int duration = 50;  // Duration of each tone in milliseconds
   const int pause = 10;     // Pause between tones in milliseconds
   
   // Play an ascending series of tones
-  tone(SPEAKER_PIN, 1000, duration);
-  delay(duration + pause);
-  tone(SPEAKER_PIN, 1500, duration);
-  delay(duration + pause);
-  tone(SPEAKER_PIN, 2000, duration);
-  delay(duration);
+  tone(SPEAKER_PIN, 1000, 50);
+  delay(60);
+  tone(SPEAKER_PIN, 1500, 50);
+  delay(60);
+  tone(SPEAKER_PIN, 2000, 50);
+  delay(50);
   
   noTone(SPEAKER_PIN);  // Ensure the tone is stopped
 }
@@ -288,7 +291,7 @@ uint8_t pPressed = 0;
 uint8_t d_num = 0;
 Point3D pPoints[POINT_NUM];
 
-int roll_num = 1;
+uint8_t roll_num = 1;
 
 Point3D speed = {10,10,10};
 
@@ -311,7 +314,7 @@ void loop() {
       case S_BUTTON_PIN:
         d_num = (d_num + 1) % MAX_FILES;
         readShapeFromFile(files[d_num]);
-        Serial.println(files[d_num]);
+        //Serial.println(files[d_num]);
         tft.fillScreen(TFT_BLACK); // Clear the screen
         rolling = false;
         speed.x = 10;
