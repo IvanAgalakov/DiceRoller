@@ -39,7 +39,7 @@ Edge edges[EDGE_NUM]; /*= {
 #define MAX_FILES 6
 const char* files[MAX_FILES] = {"/4","/6","/8","/10","/12","/20"};
 
-#define S_BUTTON_PIN 6
+#define S_BUTTON_PIN 17
 #define R_BUTTON_PIN 16
 #define L_BUTTON_PIN 15
 #define ROLL_PIN 14
