@@ -1,7 +1,5 @@
 #include <TFT_eSPI.h>
 #include <SdFat.h>
-//#include <math.h>
-//#include "pitches.h"
 
 struct Point3D {
   float x;
@@ -15,26 +13,10 @@ struct Edge {
 };
 
 #define POINT_NUM 20
-//#define PHI 1.618033988749895  // Golden ratio
-//#define SIZE 30
-Point3D points[POINT_NUM]; /*= {
-    {0, SIZE, PHI*SIZE}, {0, -SIZE, PHI*SIZE}, {0, SIZE, -PHI*SIZE}, {0, -SIZE, -PHI*SIZE},
-    {SIZE, PHI*SIZE, 0}, {-SIZE, PHI*SIZE, 0}, {SIZE, -PHI*SIZE, 0}, {-SIZE, -PHI*SIZE, 0},
-    {PHI*SIZE, 0, SIZE}, {-PHI*SIZE, 0, SIZE}, {PHI*SIZE, 0, -SIZE}, {-PHI*SIZE, 0, -SIZE}
-};*/
+Point3D points[POINT_NUM];
 
 #define EDGE_NUM 30
-Edge edges[EDGE_NUM]; /*= {
-    {0,1}, {0,4}, {0,5}, {0,8}, {0,9},
-    {1,6}, {1,7}, {1,8}, {1,9},
-    {2,3}, {2,4}, {2,5}, {2,10}, {2,11},
-    {3,6}, {3,7}, {3,10}, {3,11},
-    {4,5}, {4,8}, {4,10},
-    {5,9}, {5,11},
-    {6,7}, {6,8}, {6,10},
-    {7,9}, {7,11},
-    {8,10}, {9,11}
-};*/
+Edge edges[EDGE_NUM];
 
 #define MAX_FILES 6
 const char* files[MAX_FILES] = {"/4","/6","/8","/10","/12","/20"};
@@ -56,9 +38,6 @@ uint16_t shapeColor = TFT_WHITE;
 
 void readShapeFromFile(const char* filename) {
   file = SD.open(filename);
-  // if (!file) {
-  //   return false;
-  // }
 
   // Clear existing points and edges
   memset(points, 0, sizeof(points));
@@ -66,10 +45,6 @@ void readShapeFromFile(const char* filename) {
 
   // Read number of points
   int numPoints = file.parseInt();
-  // if (numPoints > POINT_NUM) {
-  //   file.close();
-  //   return false;
-  // }
 
   // Read points
   for (int i = 0; i < numPoints; i++) {
@@ -111,7 +86,6 @@ void readShapeFromFile(const char* filename) {
   shapeColor = (r8 << 11) | (g8 << 5) | b8;
 
   file.close();
-  //return true;
 }
 
 void displayDiceType(const char* diceType, int amount) {
@@ -153,9 +127,7 @@ void displayResult(int number) {
 
 
 void setup() {
-  //Serial.begin(9600);
   tft.begin();
-  //tft.setRotation(0);
   tft.fillScreen(TFT_BLACK);
 
   pinMode(S_BUTTON_PIN, INPUT_PULLUP);
@@ -168,13 +140,7 @@ void setup() {
     return;
   }
 
-  /*if (*/
   readShapeFromFile(files[0]);
-  /*) {
-    //Serial.println(F("Shape loaded successfully"));
-  } else {
-    //Serial.println(F("Failed to load shape"));
-  }*/
 
   // Initial dice type display
   displayDiceType("4", 1);
